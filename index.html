@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stock Analysis Chat</title>
+  <!-- Font Awesome for icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    integrity="sha512-..."
+    crossorigin="anonymous"
+  />
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Base styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f2f2f2;
+      color: #333;
+      transition: background-color 0.5s, color 0.5s;
+    }
+    .chat-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: background-color 0.5s, box-shadow 0.5s;
+    }
+    .chat-header {
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .chat-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      transition: background-color 0.5s, color 0.5s, border 0.5s;
+    }
+    .chat-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.5s;
+    }
+    .chat-button:hover {
+      background-color: #45a049;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    /* Analysis Card */
+    .analysis-card {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      transition: background-color 0.5s, border 0.5s;
+    }
+    .analysis-card.buy-signal {
+      background-color: #e0ffe0;
+      border: 1px solid #99cc99;
+    }
+    .analysis-card.sell-signal {
+      background-color: #ffe0e0;
+      border: 1px solid #cc9999;
+    }
+    .analysis-title {
+      font-size: 20px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .analysis-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .analysis-label {
+      font-weight: bold;
+      margin-right: 10px;
+      flex: 0 0 120px;
+    }
+    .analysis-value {
+      flex: 1;
+      text-align: right;
+    }
+    .buy-icon {
+      color: green;
+      margin-right: 5px;
+    }
+    .sell-icon {
+      color: red;
+      margin-right: 5px;
+    }
+    .tooltip {
+      position: relative;
+      cursor: help;
+      text-decoration: underline dotted;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 6px;
+      border-radius: 4px;
+      top: 110%;
+      left: 0;
+      white-space: nowrap;
+      font-size: 12px;
+      z-index: 10;
+    }
+    /* Chart container */
+    .chart-container {
+      width: 100%;
+      height: 300px;
+      margin-top: 20px;
+      position: relative;
+    }
+    /* News Summary Section - Card Layout */
+    .news-summary {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      transition: background-color 0.5s, border 0.5s;
+    }
+    .news-articles-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .news-article-card {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      flex: 1 1 calc(100% - 10px);
+      padding: 10px;
+      transition: box-shadow 0.3s;
+    }
+    .news-article-card:hover {
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    .news-article-card h4 {
+      margin: 0;
+    }
+    .news-summary-card {
+      margin-top: 20px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+    }
+    @media (min-width: 768px) {
+      .news-article-card {
+        flex: 1 1 calc(48% - 10px);
+      }
+    }
+    @media (min-width: 1024px) {
+      .news-article-card {
+        flex: 1 1 calc(31% - 10px);
+      }
+    }
+    /* Dark Mode Styles */
+    .dark-mode {
+      background-color: #121212;
+      color: #f2f2f2;
+    }
+    .dark-mode .chat-container {
+      background: #1e1e1e;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+    .dark-mode .chat-input {
+      background-color: #333;
+      color: #f2f2f2;
+      border: 1px solid #555;
+    }
+    .dark-mode .analysis-card {
+      background-color: #2e2e2e;
+      border: 1px solid #444;
+    }
+    .dark-mode .analysis-card.buy-signal {
+      background-color: #2e3f2e;
+      border: 1px solid #556f55;
+    }
+    .dark-mode .analysis-card.sell-signal {
+      background-color: #3f2e2e;
+      border: 1px solid #6f5555;
+    }
+    .dark-mode .news-summary {
+      background-color: #2e2e2e;
+      border: 1px solid #444;
+    }
+    .dark-mode .news-article-card {
+      background-color: #333;
+      border: 1px solid #555;
+      color: #f2f2f2;
+    }
+    .dark-mode .news-summary-card {
+      background-color: #333;
+      border: 1px solid #555;
+      color: #f2f2f2;
+    }
+    /* Dark Mode Toggle Switch */
+    .toggle-switch {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-switch .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 25px;
+      margin-right: 10px;
+    }
+    .toggle-switch .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-switch .slider {
+      position: absolute;
+      cursor: pointer;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 25px;
+      width: 50px;
+      height: 25px;
+    }
+    .toggle-switch .slider::before {
+      position: absolute;
+      content: "";
+      height: 21px;
+      width: 21px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .slider {
+      background-color: #4CAF50;
+    }
+    .toggle-switch input:checked + .slider::before {
+      transform: translateX(25px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Dark Mode Toggle Switch -->
+  <div class="toggle-switch">
+    <label class="switch">
+      <input type="checkbox" id="darkModeToggle">
+      <span class="slider"></span>
+    </label>
+    <span>Dark Mode</span>
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-header">Stock Analysis Chat</div>
+    <form method="POST">
+      <input type="text" name="symbol" placeholder="Enter symbol or company name (e.g., TCS or Tata Consultancy Services)" class="chat-input" required>
+      <button type="submit" class="chat-button">Analyze</button>
+    </form>
+    
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    {% if result %}
+      <!-- Analysis Card -->
+      <div class="analysis-card {% if result.signal == 'Buy' %}buy-signal{% else %}sell-signal{% endif %}">
+        <div class="analysis-title">Analysis Results</div>
+        <div class="analysis-row">
+          <div class="analysis-label">Stock:</div>
+          <div class="analysis-value">{{ result.stock }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Closing price of the latest trading day.">Close:</span>
+          </div>
+          <div class="analysis-value">{{ result.close|round(2) }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Simple Moving Average over 44 days.">SMA (44):</span>
+          </div>
+          <div class="analysis-value">{{ result.SMA_44|round(2) }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Exponential Moving Average over 20 days.">EMA (20):</span>
+          </div>
+          <div class="analysis-value">{{ result.EMA_20|round(2) }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Lowest price in the last 20 days.">Support:</span>
+          </div>
+          <div class="analysis-value">{{ result.support|round(2) }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Highest price in the last 20 days.">Resistance:</span>
+          </div>
+          <div class="analysis-value">{{ result.resistance|round(2) }}</div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">Signal:</div>
+          <div class="analysis-value">
+            {% if result.signal == "Buy" %}
+              <i class="fas fa-arrow-up buy-icon"></i>Buy
+            {% else %}
+              <i class="fas fa-arrow-down sell-icon"></i>Sell
+            {% endif %}
+          </div>
+        </div>
+        <div class="analysis-row">
+          <div class="analysis-label">
+            <span class="tooltip" data-tooltip="Ratio of potential profit (reward) to potential loss (risk).">Risk/Reward Ratio:</span>
+          </div>
+          <div class="analysis-value">
+            {% if result.risk_reward_ratio %}
+              {{ result.risk_reward_ratio|round(2) }}
+            {% else %}
+              N/A
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Section -->
+      {% if result.chart_data %}
+      <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+      </div>
+      <script>
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const chartData = {{ result.chart_data|safe }};
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: chartData.dates,
+            datasets: [{
+              label: 'Closing Price',
+              data: chartData.prices,
+              borderColor: 'rgba(75, 192, 192, 1)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              tension: 0.1,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: false
+              }
+            }
+          }
+        });
+      </script>
+      {% endif %}
+
+      <!-- News Summary Section (Card Layout) -->
+      {% if result.news_articles %}
+      <div class="news-summary">
+        <h3>Top News</h3>
+        <div class="news-articles-container">
+          {% for article in result.news_articles %}
+            <div class="news-article-card">
+              <a href="{{ article.link }}" target="_blank">
+                <h4>{{ article.title }}</h4>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+        <hr>
+        <div class="news-summary-card">
+          <h3>Summary</h3>
+          <p>{{ result.news_summary }}</p>
+        </div>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Dark Mode Toggle Script -->
+  <script>
+    const toggle = document.getElementById('darkModeToggle');
+    toggle.addEventListener('change', function() {
+      if (this.checked) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    });
+  </script>
+</body>
+</html>
